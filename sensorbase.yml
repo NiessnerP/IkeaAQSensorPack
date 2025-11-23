@@ -30,7 +30,7 @@ logger:
     binary_sensor: none
     pm1006: none
     bme280_i2c: none
-    ccs811: ${log_state}
+    ccs811: ${ccs811_log_state}
 
 switch:
   - platform: template
