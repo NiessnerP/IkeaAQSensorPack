@@ -26,6 +26,6 @@ esp32:
 packages:
   remote_package_files:
     url: https://github.com/NiessnerP/IkeaAQSensorPack
-    files: 01_SCR/sensorbase.yml
+    files: sensorbase.yml
     ref: main  # optional
     refresh: 1d  # optional
