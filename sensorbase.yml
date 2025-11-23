@@ -99,9 +99,8 @@ wifi:
   password: ${wifi_password}
 
   # Enable fallback hotspot (captive portal) in case wifi connection fails
-  ap:
-    ssid: "Ikea-Aq-Sensor-Pack"
-    name_add_mac_suffix: true
+#  ap:
+#    ssid: ${esphome.name}
 
 captive_portal:
 
