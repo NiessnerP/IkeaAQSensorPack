@@ -1,0 +1,172 @@
+
+esphome:
+  name: "${name}"
+  friendly_name: "${friendly_name}"
+  name_add_mac_suffix: true
+  # On Boot
+  on_boot:
+    priority: 600
+    then:
+      - lambda: |-
+          // Nur wenn Kalibrierschalter EIN ist
+          if (!id(eCO2_calibration).state) {
+            ESP_LOGI("calib", "Kalibrierschalter AUS – Baseline wird beim Boot nicht gesetzt.");
+            return;
+          }
+
+          std::string val = id(eCO2_Baseline).state;
+          if (val.length() == 6 && val[0] == '0' && val[1] == 'x') {
+            uint16_t baseline = (uint16_t) strtol(val.c_str(), nullptr, 16);
+            ESP_LOGI("calib", "Re-applying CCS811 Baseline 0x%04X", baseline);
+            id(ccs811_sensor).set_baseline(baseline);
+          } else {
+            ESP_LOGW("calib", "Gespeicherte Baseline hat kein gültiges Format, überspringe.");
+          }
+
+# Enable logging
+logger:
+  logs:
+    sensor: none
+    binary_sensor: none
+    pm1006: none
+    bme280_i2c: none
+    ccs811: ${log_state}
+
+switch:
+  - platform: template
+    name: "CCS811 Kalibrierung abgeschlossen"
+    id: eCO2_calibration
+    entity_category: config       # taucht im Configuration-Block auf
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+
+# Text-Eingabefeld für CCS811-Baseline im Format 0x0000
+text:
+  - platform: template
+    name: "CCS811 eCO2 Baseline"
+    id: eCO2_Baseline
+    mode: text
+    entity_category: config       # taucht im Configuration-Block auf
+    optimistic: true
+    restore_value: true           # Wert über Neustart behalten
+    min_length: 6                 # "0x0000"
+    max_length: 6
+
+    on_value:
+      then:
+        - lambda: |-
+            // Nur anwenden, wenn der Schalter EIN ist
+            if (!id(eCO2_calibration).state) {
+              ESP_LOGI("calib", "Kalibrierschalter AUS – Text geändert, Baseline wird NICHT gesetzt.");
+              return;
+            }
+
+            std::string val = x;
+
+            // Format prüfen: 0x + 4 HEX-Stellen
+            if (val.length() != 6 || val[0] != '0' || val[1] != 'x') {
+              ESP_LOGE("calib", "Ungültiges Format! Nutze: 0x0000");
+              return;
+            }
+
+            for (int i = 2; i < 6; i++) {
+              if (!isxdigit(val[i])) {
+                ESP_LOGE("calib", "Ungültige HEX-Zeichen! Nutze 0-9/A-F.");
+                return;
+              }
+            }
+
+            // HEX-String → Integer
+            uint16_t baseline = (uint16_t) strtol(val.c_str(), nullptr, 16);
+
+            ESP_LOGI("calib", "Setze CCS811 Baseline auf 0x%04X (%u)",
+                     baseline, baseline);
+
+            // Baseline direkt an den Sensor schicken
+            id(ccs811_sensor).set_baseline(baseline);
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: ${api_key}
+
+ota:
+  - platform: esphome
+    password: ${ota_password}
+
+wifi:
+  ssid: ${wifi_ssid}
+  password: ${wifi_password}
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Ikea-Aq-Sensor-Pack"
+    name_add_mac_suffix: true
+
+captive_portal:
+
+web_server:
+  port: 80
+
+## Serial Port for the IKEA Sensor
+uart:
+  - rx_pin: ${uart_rx}
+    # tx_pin: ${uart_tx}
+    baud_rate: 9600
+
+i2c:
+  sda: ${i2c_sda}
+  scl: ${i2c_scl}
+  scan: true
+  id: bus_a
+
+binary_sensor:
+  ## Use the on-board LED to show "Fan Running"
+  - platform: gpio
+    name: Fan
+    id: fan
+    pin:
+      number: ${fan_input}
+      inverted: true
+
+sensor:
+  - platform: bme280_i2c
+    temperature:
+      name: "BME280 Temperature"
+      id: bme280_temperature
+    pressure:
+      name: "BME280 Pressure"
+      id: bme280_pressure
+    humidity:
+      name: "BME280 Relative Humidity"
+      id: bme280_humidity
+    i2c_id: bus_a
+    address: 0x76
+    update_interval: ${update_interval}
+
+  - platform: ccs811
+    id: ccs811_sensor
+    eco2:
+      name: "CCS811 eCO2 Value"
+    tvoc:
+      name: "CCS811 Total Volatile Organic Compound"
+    i2c_id: bus_a
+    address: 0x5A
+    update_interval:  ${update_interval}
+    temperature: bme280_temperature
+    humidity: bme280_humidity
+
+  ## IKEA PMS 2.5um Sensor
+  - platform: pm1006
+    id: aq_sensor
+    pm_2_5:
+      name: PMS 2.5µg
+
+  ## The IKEA Light Level Sensor
+  - platform: adc
+    id: light_sensor
+    name: "Light in mV"
+    unit_of_measurement: "mV"
+    pin: ${lightlvl_input}
+    raw: true
+    update_interval: 1s

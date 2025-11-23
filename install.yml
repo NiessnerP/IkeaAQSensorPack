@@ -1,0 +1,31 @@
+substitutions:
+  name: "ikea-aq-sensor-pack"
+  friendly_name: "Ikea AQ Sensor Pack"
+  #
+  wifi_ssid: !secret wifi_ssid
+  wifi_password: !secret wifi_password
+  api_key: !secret api_key
+  ota_password: !secret ota_password
+  #
+  uart_rx: GPIO20
+  #uart_tx: GPIO21
+  i2c_sda: GPIO6
+  i2c_scl: GPIO7
+  fan_input: GPIO8
+  lightlvl_input: GPIO2
+  update_interval: 10s
+  ccs811_log_state: none
+
+esp32:
+  board: seeed_xiao_esp32c3
+  framework:
+    type: arduino
+    version: recommended
+
+# Git repo examples as a mapping
+packages:
+  remote_package_files:
+    url: https://github.com/NiessnerP/IkeaAQSensorPack
+    files: 01_SCR/sensorbase.yml
+    ref: main  # optional
+    refresh: 1d  # optional
