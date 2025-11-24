@@ -28,3 +28,8 @@ packages:
     files: sensorbase.yml
     ref: main  # optional
     refresh: 1d  # optional
+
+update:
+  - platform: esphome
+    name: "GitHub Firmware Update"
+    entity_category: config
