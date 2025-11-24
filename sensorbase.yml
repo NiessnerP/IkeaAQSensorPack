@@ -109,17 +109,11 @@ http_request:
   verify_ssl: false
   timeout: 10s
 
-button:
-  - platform: template
+update:
+  - platform: http_request
     name: "Firmware Update (GitHub)"
     entity_category: config
-    icon: "mdi:update"
-    on_press:
-      then:
-        - logger.log: "Starte Firmware Update von GitHub..."
-        - ota.update:
-            id: github_ota
-            url: "https://github.com/NiessnerP/IkeaAQSensorPack/releases/latest/download/firmware.bin"
+    source: https://github.com/NiessnerP/IkeaAQSensorPack/releases/latest/download/firmware.bin
 
 wifi:
   ssid: ${wifi_ssid}
