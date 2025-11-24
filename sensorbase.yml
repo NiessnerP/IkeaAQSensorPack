@@ -1,8 +1,13 @@
+##############################################
+# ESPHOME BASISKONFIGURATION
+##############################################
+
 esphome:
   name: "${name}"
   friendly_name: "${friendly_name}"
   name_add_mac_suffix: true
 
+  # Beim Start: Baseline ggf. erneut setzen
   on_boot:
     priority: 600
     then:
@@ -19,6 +24,10 @@ esphome:
             id(ccs811_sensor).set_baseline(baseline);
           }
 
+##############################################
+# LOGGER
+##############################################
+
 logger:
   logs:
     sensor: none
@@ -27,6 +36,10 @@ logger:
     bme280_i2c: none
     ccs811: none
 
+##############################################
+# KALIBRIER-SCHALTER
+##############################################
+
 switch:
   - platform: template
     name: "CCS811 Kalibrierung abgeschlossen"
@@ -34,6 +47,10 @@ switch:
     entity_category: config
     optimistic: true
     restore_mode: RESTORE_DEFAULT_OFF
+
+##############################################
+# BASELINE HEX-EINGABE
+##############################################
 
 text:
   - platform: template
@@ -66,9 +83,17 @@ text:
 
             id(ccs811_sensor).set_baseline(baseline);
 
+##############################################
+# HOME ASSISTANT API
+##############################################
+
 api:
   encryption:
     key: ${api_key}
+
+##############################################
+# HTTP OTA FÜR GITHUB UPDATE
+##############################################
 
 http_request:
   verify_ssl: false
@@ -83,6 +108,10 @@ update:
     entity_category: config
     source: https://github.com/NiessnerP/IkeaAQSensorPack/releases/latest/download/firmware.bin
 
+##############################################
+# WLAN
+##############################################
+
 wifi:
   ssid: ${wifi_ssid}
   password: ${wifi_password}
@@ -95,14 +124,26 @@ captive_portal:
 web_server:
   port: 80
 
+##############################################
+# UART
+##############################################
+
 uart:
   - rx_pin: ${uart_rx}
     baud_rate: 9600
+
+##############################################
+# I2C
+##############################################
 
 i2c:
   sda: ${i2c_sda}
   scl: ${i2c_scl}
   id: bus_a
+
+##############################################
+# BINÄRSENSOR
+##############################################
 
 binary_sensor:
   - platform: gpio
@@ -112,7 +153,12 @@ binary_sensor:
       number: ${fan_input}
       inverted: true
 
+##############################################
+# SENSOREN
+##############################################
+
 sensor:
+  # --- BME280 ---
   - platform: bme280_i2c
     temperature:
       name: "BME280 Temperature"
@@ -127,6 +173,7 @@ sensor:
     address: 0x76
     update_interval: ${update_interval}
 
+  # --- CCS811 ---
   - platform: ccs811
     id: ccs811_sensor
 
@@ -154,11 +201,13 @@ sensor:
     temperature: bme280_temperature
     humidity: bme280_humidity
 
+  # --- PMS1006 ---
   - platform: pm1006
     id: aq_sensor
     pm_2_5:
       name: PMS 2.5µg
 
+  # --- Lichtsensor ---
   - platform: adc
     id: light_sensor
     name: "Light in mV"
