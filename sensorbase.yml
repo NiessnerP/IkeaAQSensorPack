@@ -106,7 +106,7 @@ ota:
     id: github_ota
 
 http_request:
-  verify_ssl: True
+  verify_ssl: false
   timeout: 10s
 
 button:
