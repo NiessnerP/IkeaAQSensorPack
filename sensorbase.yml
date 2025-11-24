@@ -17,11 +17,7 @@ esphome:
             uint16_t baseline = (uint16_t) strtol(val.c_str(), nullptr, 16);
             ESP_LOGI("calib", "Re-applying CCS811 Baseline 0x%04X", baseline);
             id(ccs811_sensor).set_baseline(baseline);
-          } else {
-            ESP_LOGW("calib", "Gespeicherte Baseline ungültig – überspringe.");
           }
-
-# ================= LOGGING =================
 
 logger:
   logs:
@@ -31,8 +27,6 @@ logger:
     bme280_i2c: none
     ccs811: none
 
-# ================= KALIBRIER-SCHALTER =================
-
 switch:
   - platform: template
     name: "CCS811 Kalibrierung abgeschlossen"
@@ -40,8 +34,6 @@ switch:
     entity_category: config
     optimistic: true
     restore_mode: RESTORE_DEFAULT_OFF
-
-# ================= HEX BASELINE EINGABE =================
 
 text:
   - platform: template
@@ -58,7 +50,7 @@ text:
       then:
         - lambda: |-
             if (!id(eCO2_calibration).state) {
-              ESP_LOGI("calib", "Kalibrierschalter AUS – Baseline wird NICHT gesetzt.");
+              ESP_LOGI("calib", "Schalter AUS – keine Baseline gesetzt.");
               return;
             }
 
@@ -74,13 +66,9 @@ text:
 
             id(ccs811_sensor).set_baseline(baseline);
 
-# ================= API =================
-
 api:
   encryption:
     key: ${api_key}
-
-# ================= HTTP OTA = GitHub =================
 
 http_request:
   verify_ssl: false
@@ -95,8 +83,6 @@ update:
     entity_category: config
     source: https://github.com/NiessnerP/IkeaAQSensorPack/releases/latest/download/firmware.bin
 
-# ================= WIFI =================
-
 wifi:
   ssid: ${wifi_ssid}
   password: ${wifi_password}
@@ -109,21 +95,14 @@ captive_portal:
 web_server:
   port: 80
 
-# ================= UART =================
-
 uart:
   - rx_pin: ${uart_rx}
     baud_rate: 9600
 
-# ================= I2C =================
-
 i2c:
   sda: ${i2c_sda}
   scl: ${i2c_scl}
-  scan: true
   id: bus_a
-
-# ================= BINARY SENSOR =================
 
 binary_sensor:
   - platform: gpio
@@ -132,8 +111,6 @@ binary_sensor:
     pin:
       number: ${fan_input}
       inverted: true
-
-# ================= SENSORS =================
 
 sensor:
   - platform: bme280_i2c
@@ -144,7 +121,7 @@ sensor:
       name: "BME280 Pressure"
       id: bme280_pressure
     humidity:
-      name: "BME280 Relative Humidity"
+      name: "BME280 Humidity"
       id: bme280_humidity
     i2c_id: bus_a
     address: 0x76
@@ -155,12 +132,21 @@ sensor:
 
     eco2:
       name: "CCS811 eCO2 Value"
-    tvoc:
-      name: "CCS811 Total Volatile Organic Compound"
+      on_value:
+        then:
+          - lambda: |-
+              if (!id(eCO2_calibration).state) {
+                ESP_LOGW("ccs811", "eCO2: %.0f ppm", x);
+              }
 
-    baseline:
-      id: ccs811_baseline
-      internal: true
+    tvoc:
+      name: "CCS811 TVOC"
+      on_value:
+        then:
+          - lambda: |-
+              if (!id(eCO2_calibration).state) {
+                ESP_LOGW("ccs811", "TVOC: %.0f ppb", x);
+              }
 
     i2c_id: bus_a
     address: 0x5A
@@ -171,25 +157,11 @@ sensor:
   - platform: pm1006
     id: aq_sensor
     pm_2_5:
-      name: "PMS 2.5µg"
+      name: PMS 2.5µg
 
   - platform: adc
     id: light_sensor
     name: "Light in mV"
-    unit_of_measurement: "mV"
     pin: ${lightlvl_input}
     raw: true
     update_interval: 1s
-
-# ================= BASELINE LOGGER =================
-
-interval:
-  - interval: 15s
-    then:
-      - lambda: |-
-          if (!id(eCO2_calibration).state) {
-            uint16_t baseline = (uint16_t) id(ccs811_baseline).state;
-            ESP_LOGW("ccs811",
-              "Aktuelle CCS811 Baseline: 0x%04X (%u)",
-              baseline, baseline);
-          }
