@@ -117,7 +117,7 @@ button:
     on_press:
       then:
         - logger.log: "Starte Firmware Update von GitHub..."
-        - ota.http_request:
+        - ota.http_request.update:
             url: "https://github.com/NiessnerP/IkeaAQSensorPack/releases/latest/download/firmware.bin"
 
 
