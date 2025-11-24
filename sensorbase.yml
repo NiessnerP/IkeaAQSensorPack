@@ -63,7 +63,7 @@ text:
     min_length: 6                 # "0x0000"
     max_length: 6
 
-    on_value:
+    on_state:
       then:
         - lambda: |-
             // Nur anwenden, wenn der Schalter EIN ist
@@ -102,8 +102,22 @@ api:
     key: ${api_key}
 
 ota:
-  - platform: esphome
-    password: ${ota_password}
+  - platform: http_request
+    id: github_ota
+
+http_request:
+  timeout: 10s
+
+button:
+  - platform: template
+    name: "Firmware Update (GitHub)"
+    entity_category: config
+    icon: "mdi:update"
+    on_press:
+      then:
+        - logger.log: "Starte Firmware Update von GitHub..."
+        - ota.http_request:
+            url: "https://github.com/NiessnerP/IkeaAQSensorPack/releases/latest/download/firmware.bin"
 
 wifi:
   ssid: ${wifi_ssid}
