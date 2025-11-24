@@ -102,10 +102,11 @@ api:
     key: ${api_key}
 
 ota:
-  - platform: https_request
+  - platform: http_request
     id: github_ota
 
 http_request:
+  verify_ssl: True
   timeout: 10s
 
 button:
@@ -118,6 +119,7 @@ button:
         - logger.log: "Starte Firmware Update von GitHub..."
         - ota.http_request:
             url: "https://github.com/NiessnerP/IkeaAQSensorPack/releases/latest/download/firmware.bin"
+
 
 wifi:
   ssid: ${wifi_ssid}
