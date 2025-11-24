@@ -39,7 +39,7 @@ switch:
     entity_category: config       # taucht im Configuration-Block auf
     optimistic: true
     restore_mode: RESTORE_DEFAULT_OFF
-    on_value:
+    on_state:
       then:
         - lambda: |-
             uint16_t val = (uint16_t) x;
@@ -63,7 +63,7 @@ text:
     min_length: 6                 # "0x0000"
     max_length: 6
 
-    on_state:
+    on_value:
       then:
         - lambda: |-
             // Nur anwenden, wenn der Schalter EIN ist
