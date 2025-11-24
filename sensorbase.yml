@@ -30,7 +30,7 @@ logger:
     binary_sensor: none
     pm1006: none
     bme280_i2c: none
-    ccs811: ${ccs811_log_state}
+    ccs811: none
 
 switch:
   - platform: template
@@ -39,6 +39,17 @@ switch:
     entity_category: config       # taucht im Configuration-Block auf
     optimistic: true
     restore_mode: RESTORE_DEFAULT_OFF
+    on_value:
+      then:
+        - lambda: |-
+            uint16_t val = (uint16_t) x;
+
+            // Nur loggen wenn Kalibrierung NICHT abgeschlossen ist
+            if (!id(eCO2_calibration).state) {
+              ESP_LOGW("ccs811",
+                "CCS811 aktuelle Baseline: 0x%04X (%u)", 
+                val, val);
+              }
 
 # Text-Eingabefeld für CCS811-Baseline im Format 0x0000
 text:
@@ -150,6 +161,8 @@ sensor:
     tvoc:
       name: "CCS811 Total Volatile Organic Compound"
     i2c_id: bus_a
+    baseline:
+      id: ccs811_baseline   # nur intern, kein HA-Entity nötig
     address: 0x5A
     update_interval:  ${update_interval}
     temperature: bme280_temperature
@@ -169,3 +182,17 @@ sensor:
     pin: ${lightlvl_input}
     raw: true
     update_interval: 1s
+
+interval:
+  - interval: 15s
+    then:
+      - lambda: |-
+          // Nur loggen, wenn Kalibrierung noch NICHT abgeschlossen ist
+          if (!id(eCO2_calibration).state) {
+
+            uint16_t baseline = (uint16_t) id(ccs811_baseline).state;
+
+            ESP_LOGW("ccs811",
+              "Aktuelle CCS811 Baseline: 0x%04X (%u)",
+              baseline, baseline);
+          }

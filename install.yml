@@ -14,7 +14,6 @@ substitutions:
   fan_input: GPIO8
   lightlvl_input: GPIO2
   update_interval: 10s
-  ccs811_log_state: none
 
 esp32:
   board: seeed_xiao_esp32c3
